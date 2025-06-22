@@ -78,10 +78,29 @@ on Student(sname)
 
 \begin{mdframed}[backgroundcolor=blue!5]
 \begin{verbatim}
+-- 添加唯一约束的方式
+alter table course
+add constraint cname_ind unique(cname)
+
+-- 创建索引的方式（考试禁用！！！）
 create unique nonclustered /*题目要求唯一，需要加unique*/
 index Cname_ind
 on Course(Cname)
 \end{verbatim}
+\end{mdframed}
+
+\begin{mdframed}[backgroundcolor=yellow!10]
+  \textbf{ \textcolor{Red}{特别注意！！！}}
+
+  \qquad 由于机考的局限性，创建唯一非聚集索引\textbf{不允许使用创建索引的方式}，
+  需要使用\textbf{添加唯一UNIQUE约束的方式}。
+
+  \qquad 根据超星视图与索引章节PPT的最后一页，得到以下创建索引方式的总结，请\textbf{严格按照要求}：
+  \begin{itemize}
+    \item 唯一聚集索引：创建主键
+    \item 唯一非聚集索引：创建UNIQUE约束
+    \item 创建非聚集索引：创建索引模板\ref{index:1}
+  \end{itemize}
 \end{mdframed}
 
 \subsection{知识点拓展}
