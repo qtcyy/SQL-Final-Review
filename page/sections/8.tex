@@ -1,0 +1,440 @@
+\section{第八题：数据库的备份与恢复}
+
+\subsection{题目}
+
+\begin{enumerate}
+  \item 创建销售管理数据库的完整备份，备份设备名为abc+学号后3位，如：abc109（备份设备处截图），位置放置在D:\textbackslash abc。
+  \item 插入一个新员工（自己的名字），然后进行一次差异备份。
+  \item 删除刚添加的新员工信息，再进行一次日志备份。
+  \item 恢复完整备份。
+  \item 恢复完全备份+差异备份。（或者换一种问法，即，恢复到刚刚插入新员工的位置）
+  \item 恢复完全备份+差异备份+日志备份。（或者换一种问法，即，恢复到刚刚删除新员工的位置）
+\end{enumerate}
+
+\subsection{解析}
+\qquad 这个题涉及数据库的备份和恢复备份，我会介绍一下数据库备份与恢复相关的知识点。
+
+\subsubsection{创建备份设备}
+
+\qquad 备份设备是SQL Server中用于存储备份文件的逻辑设备，可以是磁盘文件或磁带设备。通过创建备份设备，可以简化备份操作，避免每次都指定完整的文件路径。
+
+\qquad \textbf{模板：}
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+-- 创建备份设备模板
+EXEC sp_addumpdevice
+    @devtype = '[设备类型：disk/tape]',
+    @logicalname = '[备份设备逻辑名称]',
+    @physicalname = '[备份文件完整路径]'
+\end{verbatim}
+\end{mdframed}
+
+\qquad \textbf{示例：}
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+-- 为销售管理数据库创建备份设备abc109
+EXEC sp_addumpdevice
+    @devtype = 'disk',
+    @logicalname = 'abc109',
+    @physicalname = 'D:\abc\abc109.bak'
+\end{verbatim}
+\end{mdframed}
+
+\subsubsection{备份类型}
+
+\textbf{1. 完整备份}
+
+\qquad \textbf{概念说明：}完整备份会备份整个数据库，包括所有数据页、索引页、系统表和数据库结构信息。它是所有其他备份类型的基础。
+
+\qquad \textbf{特点：}
+\begin{itemize}
+  \item \textbf{优点}：包含完整的数据库信息，恢复时不依赖其他备份文件
+  \item \textbf{缺点}：备份时间长，占用存储空间大
+  \item \textbf{适用场景}：定期的基础备份，作为其他备份类型的基础
+  \item \textbf{恢复能力}：可以独立恢复到备份时的状态
+\end{itemize}
+
+\qquad \textbf{模板：}
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+-- 完整备份模板
+BACKUP DATABASE [数据库名称]
+TO [备份设备名称或DISK='文件路径']
+WITH FORMAT, INIT,
+NAME = '[备份名称描述]',
+SKIP, NOREWIND, NOUNLOAD, STATS = 10
+\end{verbatim}
+\end{mdframed}
+
+\qquad \textbf{示例：}
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+-- 销售管理数据库完整备份
+BACKUP DATABASE 销售管理 TO abc109
+WITH FORMAT, INIT,
+NAME = '销售管理-完整数据库备份',
+SKIP, NOREWIND, NOUNLOAD, STATS = 10
+\end{verbatim}
+\end{mdframed}
+
+\textbf{2. 差异备份}
+
+\qquad \textbf{概念说明：}差异备份只备份自上次完整备份以来发生变化的数据页。它基于数据库的差异位图（Differential Bitmap）来识别哪些页面发生了变化。
+
+\qquad \textbf{特点：}
+\begin{itemize}
+  \item \textbf{优点}：备份速度快，占用空间小，备份时间可预测
+  \item \textbf{缺点}：恢复时需要完整备份和最新的差异备份，随时间推移备份会越来越大
+  \item \textbf{适用场景}：数据变化频繁但希望快速备份的环境
+  \item \textbf{恢复能力}：需要与完整备份配合使用
+\end{itemize}
+
+\qquad \textbf{模板：}
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+-- 差异备份模板
+BACKUP DATABASE [数据库名称]
+TO [备份设备名称或DISK='文件路径']
+WITH DIFFERENTIAL,
+NAME = '[备份名称描述]',
+SKIP, NOREWIND, NOUNLOAD, STATS = 10
+\end{verbatim}
+\end{mdframed}
+
+\qquad \textbf{示例：}
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+-- 插入新员工后进行差异备份
+INSERT INTO 员工表 VALUES ('张三', '开发部', 8000)
+
+BACKUP DATABASE 销售管理
+TO DISK = 'D:\abc\销售管理_差异备份.bak'
+WITH DIFFERENTIAL,
+NAME = '销售管理-差异数据库备份',
+SKIP, NOREWIND, NOUNLOAD, STATS = 10
+\end{verbatim}
+\end{mdframed}
+
+\textbf{3. 事务日志备份}
+
+\qquad \textbf{概念说明：}事务日志备份用于备份事务日志文件中的活动事务记录，记录自上次日志备份以来的所有数据库活动。它是实现时点恢复的关键。
+
+\qquad \textbf{特点：}
+\begin{itemize}
+  \item \textbf{优点}：备份速度最快，文件最小，支持时点恢复，数据丢失最少
+  \item \textbf{缺点}：需要数据库处于完整恢复模式，必须定期执行以防日志文件过大
+  \item \textbf{适用场景}：对数据安全要求极高，需要频繁备份的环境
+  \item \textbf{恢复能力}：可以恢复到任意时间点，最大限度减少数据丢失
+\end{itemize}
+
+\qquad \textbf{模板：}
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+-- 事务日志备份模板（需要完整恢复模式）
+ALTER DATABASE [数据库名称] SET RECOVERY FULL
+
+BACKUP LOG [数据库名称]
+TO [备份设备名称或DISK='文件路径']
+WITH NAME = '[备份名称描述]',
+SKIP, NOREWIND, NOUNLOAD, STATS = 10
+\end{verbatim}
+\end{mdframed}
+
+\qquad \textbf{示例：}
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+-- 删除员工后进行日志备份
+DELETE FROM 员工表 WHERE 姓名 = '张三'
+
+-- 设置完整恢复模式
+ALTER DATABASE 销售管理 SET RECOVERY FULL
+
+-- 进行日志备份
+BACKUP LOG 销售管理
+TO DISK = 'D:\abc\销售管理_日志备份.trn'
+WITH NAME = '销售管理-事务日志备份',
+SKIP, NOREWIND, NOUNLOAD, STATS = 10
+\end{verbatim}
+\end{mdframed}
+
+\subsubsection{数据库恢复}
+
+\textbf{1. 恢复完整备份}
+
+\qquad \textbf{说明：}这是最简单的恢复方式，直接从完整备份恢复整个数据库。会丢失备份时间点之后的所有数据变更。
+
+\qquad \textbf{模板：}
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+-- 恢复完整备份模板
+RESTORE DATABASE [数据库名称]
+FROM [备份设备名称或DISK='文件路径']
+WITH REPLACE, RECOVERY
+\end{verbatim}
+\end{mdframed}
+
+\qquad \textbf{示例：}
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+-- 方式1：从备份设备恢复
+RESTORE DATABASE 销售管理 FROM abc109
+WITH REPLACE, RECOVERY
+
+-- 方式2：从文件路径恢复
+RESTORE DATABASE 销售管理
+FROM DISK = 'D:\abc\abc109.bak'
+WITH REPLACE, RECOVERY
+\end{verbatim}
+\end{mdframed}
+
+\textbf{2. 恢复完整备份+差异备份}
+
+\qquad \textbf{说明：}先恢复完整备份，再应用差异备份。可以恢复到差异备份时的状态，减少了部分数据丢失。注意必须使用NORECOVERY选项，直到最后一步才使用RECOVERY。
+
+\qquad \textbf{模板：}
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+-- 恢复完整备份+差异备份模板
+RESTORE DATABASE [数据库名称]
+FROM [完整备份设备或路径]
+WITH REPLACE, NORECOVERY
+
+RESTORE DATABASE [数据库名称]
+FROM [差异备份设备或路径]
+WITH RECOVERY
+\end{verbatim}
+\end{mdframed}
+
+\qquad \textbf{示例：}
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+-- 恢复到插入新员工后的状态
+-- 方式1：从备份设备恢复完整备份
+RESTORE DATABASE 销售管理 FROM abc109
+WITH REPLACE, NORECOVERY
+
+RESTORE DATABASE 销售管理
+FROM DISK = 'D:\abc\销售管理_差异备份.bak'
+WITH RECOVERY
+
+-- 方式2：完全使用文件路径
+RESTORE DATABASE 销售管理
+FROM DISK = 'D:\abc\abc109.bak'
+WITH REPLACE, NORECOVERY
+
+RESTORE DATABASE 销售管理
+FROM DISK = 'D:\abc\销售管理_差异备份.bak'
+WITH RECOVERY
+\end{verbatim}
+\end{mdframed}
+
+\textbf{3. 恢复完整备份+差异备份+日志备份}
+
+\qquad \textbf{说明：}这是最完整的恢复策略，可以恢复到日志备份时的精确状态。通过应用事务日志，可以实现几乎零数据丢失的恢复。
+
+\qquad \textbf{模板：}
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+-- 恢复完整+差异+日志备份模板
+RESTORE DATABASE [数据库名称]
+FROM [完整备份设备或路径]
+WITH REPLACE, NORECOVERY
+
+RESTORE DATABASE [数据库名称]
+FROM [差异备份设备或路径]
+WITH NORECOVERY
+
+RESTORE LOG [数据库名称]
+FROM [日志备份设备或路径]
+WITH RECOVERY
+\end{verbatim}
+\end{mdframed}
+
+\qquad \textbf{示例：}
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+-- 恢复到删除员工后的状态
+-- 方式1：混合使用备份设备和文件路径
+RESTORE DATABASE 销售管理 FROM abc109
+WITH REPLACE, NORECOVERY
+
+RESTORE DATABASE 销售管理
+FROM DISK = 'D:\abc\销售管理_差异备份.bak'
+WITH NORECOVERY
+
+RESTORE LOG 销售管理
+FROM DISK = 'D:\abc\销售管理_日志备份.trn'
+WITH RECOVERY
+
+-- 方式2：完全使用文件路径
+RESTORE DATABASE 销售管理
+FROM DISK = 'D:\abc\abc109.bak'
+WITH REPLACE, NORECOVERY
+
+RESTORE DATABASE 销售管理
+FROM DISK = 'D:\abc\销售管理_差异备份.bak'
+WITH NORECOVERY
+
+RESTORE LOG 销售管理
+FROM DISK = 'D:\abc\销售管理_日志备份.trn'
+WITH RECOVERY
+\end{verbatim}
+\end{mdframed}
+
+\subsubsection{问题一}
+
+\textbf{题目} \emph{创建销售管理数据库的完整备份，备份设备名为abc+学号后3位，如：abc109（备份设备处截图），位置放置在D:\textbackslash abc。}
+
+\qquad 这个问题需要先创建备份设备，然后进行完整备份。备份设备的作用是为备份文件创建一个逻辑名称，简化后续的备份和恢复操作。
+
+\qquad 根据前面的创建备份设备和完整备份模板可得到答案：
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+-- 步骤1：创建备份设备abc109
+EXEC sp_addumpdevice
+    @devtype = 'disk',
+    @logicalname = 'abc109',
+    @physicalname = 'D:\abc\abc109.bak'
+
+-- 步骤2：执行销售管理数据库的完整备份
+BACKUP DATABASE 销售管理 TO abc109
+WITH FORMAT, INIT,
+NAME = '销售管理数据库完整备份',
+SKIP, NOREWIND, NOUNLOAD, STATS = 10
+\end{verbatim}
+\end{mdframed}
+
+\subsubsection{问题二}
+
+\textbf{题目} \emph{插入一个新员工（自己的名字），然后进行一次差异备份。}
+
+\qquad 差异备份只备份自上次完整备份以来发生变化的数据页。在插入新员工后进行差异备份，可以快速保存这个新增的数据变更。
+
+\qquad 根据前面的差异备份模板可得到答案：
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+-- 步骤1：插入新员工（假设员工表包含姓名、部门、工资字段）
+INSERT INTO 员工表 (姓名, 部门, 工资)
+VALUES ('张三', '开发部', 8000)
+
+-- 步骤2：执行差异备份
+BACKUP DATABASE 销售管理
+TO DISK = 'D:\abc\销售管理_差异备份.bak'
+WITH DIFFERENTIAL,
+NAME = '销售管理数据库差异备份-插入新员工后',
+SKIP, NOREWIND, NOUNLOAD, STATS = 10
+\end{verbatim}
+\end{mdframed}
+
+\subsubsection{问题三}
+
+\textbf{题目} \emph{删除刚添加的新员工信息，再进行一次日志备份。}
+
+\qquad 日志备份用于备份事务日志中的活动记录，记录删除操作等数据库变更。执行日志备份前需要确保数据库处于完整恢复模式。
+
+\qquad 根据前面的事务日志备份模板可得到答案：
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+-- 步骤1：删除刚添加的员工
+DELETE FROM 员工表 WHERE 姓名 = '张三'
+
+-- 步骤2：设置数据库为完整恢复模式（如果尚未设置）
+ALTER DATABASE 销售管理 SET RECOVERY FULL
+
+-- 步骤3：执行日志备份
+BACKUP LOG 销售管理
+TO DISK = 'D:\abc\销售管理_日志备份.trn'
+WITH NAME = '销售管理数据库日志备份-删除员工后',
+SKIP, NOREWIND, NOUNLOAD, STATS = 10
+\end{verbatim}
+\end{mdframed}
+
+\subsubsection{问题四}
+
+\textbf{题目} \emph{恢复完整备份。}
+
+\qquad 这是最基本的恢复操作，直接从完整备份恢复整个数据库到备份时的状态。
+
+\qquad 根据前面的恢复完整备份模板可得到答案：
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+-- 方式1：从备份设备恢复
+RESTORE DATABASE 销售管理 FROM abc109
+WITH REPLACE, RECOVERY
+
+-- 方式2：从文件路径恢复
+RESTORE DATABASE 销售管理
+FROM DISK = 'D:\abc\abc109.bak'
+WITH REPLACE, RECOVERY
+\end{verbatim}
+\end{mdframed}
+
+\subsubsection{问题五}
+
+\textbf{题目} \emph{恢复完全备份+差异备份。（或者换一种问法，即，恢复到刚刚插入新员工的位置）}
+
+\qquad 这种恢复方式可以恢复到差异备份时的状态，即插入新员工之后、删除员工之前的状态。
+
+\qquad 根据前面的恢复完整备份+差异备份模板可得到答案：
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+-- 方式1：使用备份设备恢复完整备份
+RESTORE DATABASE 销售管理 FROM abc109
+WITH REPLACE, NORECOVERY
+
+RESTORE DATABASE 销售管理
+FROM DISK = 'D:\abc\销售管理_差异备份.bak'
+WITH RECOVERY
+
+-- 方式2：完全使用文件路径
+RESTORE DATABASE 销售管理
+FROM DISK = 'D:\abc\abc109.bak'
+WITH REPLACE, NORECOVERY
+
+RESTORE DATABASE 销售管理
+FROM DISK = 'D:\abc\销售管理_差异备份.bak'
+WITH RECOVERY
+\end{verbatim}
+\end{mdframed}
+
+\subsubsection{问题六}
+
+\textbf{题目} \emph{恢复完全备份+差异备份+日志备份。（或者换一种问法，即，恢复到刚刚删除新员工的位置）}
+
+\qquad 这是最完整的恢复策略，可以恢复到日志备份时的精确状态，即删除员工操作完成后的状态。
+
+\qquad 根据前面的恢复完整备份+差异备份+日志备份模板可得到答案：
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+-- 方式1：混合使用备份设备和文件路径
+RESTORE DATABASE 销售管理 FROM abc109
+WITH REPLACE, NORECOVERY
+
+RESTORE DATABASE 销售管理
+FROM DISK = 'D:\abc\销售管理_差异备份.bak'
+WITH NORECOVERY
+
+RESTORE LOG 销售管理
+FROM DISK = 'D:\abc\销售管理_日志备份.trn'
+WITH RECOVERY
+
+-- 方式2：完全使用文件路径
+RESTORE DATABASE 销售管理
+FROM DISK = 'D:\abc\abc109.bak'
+WITH REPLACE, NORECOVERY
+
+RESTORE DATABASE 销售管理
+FROM DISK = 'D:\abc\销售管理_差异备份.bak'
+WITH NORECOVERY
+
+RESTORE LOG 销售管理
+FROM DISK = 'D:\abc\销售管理_日志备份.trn'
+WITH RECOVERY
+\end{verbatim}
+\end{mdframed}

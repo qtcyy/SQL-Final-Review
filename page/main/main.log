@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999996 (TeX Live 2024) (preloaded format=xelatex 2024.5.16)  22 JUN 2025 12:29
+This is XeTeX, Version 3.141592653-2.6-0.999996 (TeX Live 2024) (preloaded format=xelatex 2024.5.16)  22 JUN 2025 13:23
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -1088,7 +1088,17 @@ Package mdframed Info: Not enough space on this page on input line 39.
 Package mdframed Info: Not enough space on this page on input line 143.
  [33]
 Package mdframed Info: Not enough space on this page on input line 143.
- [34] [35]) [36] (./main.aux)
+ [34] [35]) (../sections/8.tex [36] [37]
+Package mdframed Info: Not enough space on this page on input line 116.
+ [38]
+Package mdframed Info: Not enough space on this page on input line 116.
+ [39]
+Package mdframed Info: Not enough space on this page on input line 229.
+ [40]
+Package mdframed Info: Not enough space on this page on input line 229.
+ [41] [42] [43] [44]
+Package mdframed Info: Not enough space on this page on input line 440.
+) [45] (./main.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2022/08/05>
@@ -1098,15 +1108,15 @@ L3 programming layer <2022/08/05>
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: 22113611262A2A2609434AAA2E38CA5C;7347.
+(rerunfilecheck)             Checksum: 2A28CFB2461BD45B968F5B341723C133;8519.
  ) 
 Here is how much of TeX's memory you used:
- 32071 strings out of 474773
- 718197 string characters out of 5757724
+ 32143 strings out of 474773
+ 720531 string characters out of 5757724
  1962839 words of memory out of 5000000
- 53647 multiletter control sequences out of 15000+600000
+ 53716 multiletter control sequences out of 15000+600000
  565021 words of font info for 102 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
  108i,10n,114p,533b,2029s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on main.pdf (36 pages).
+Output written on main.pdf (45 pages).
