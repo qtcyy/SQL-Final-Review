@@ -1,0 +1,85 @@
+\section{第一题：数据库的创建}
+
+\subsection{题目}
+
+\qquad 学生选课管理数据库经过一段时间的使用后，随着数据量的不断增大，引起数据库空间不足。
+
+\begin{enumerate}
+  \item 现增加一个数据文件存储在D:\textbackslash，数据文件的逻辑名称为Stu\_Data2，物理文件名为Stu\_data2.ndf，初始大小为10MB，最大尺寸为 2GB，增长速度为10MB。
+  \item 现在增加一个事务日志文件，存储在D:\textbackslash 中，日志文件的逻辑名称为Stu\_log2，物理文件名为Stu\_log2.ldf，初始大小为10MB，最大尺寸为500MB，增长速率为15\%。
+\end{enumerate}
+
+\subsection{解析}
+
+\qquad 这里给出答案：
+
+\begin{mdframed}[backgroundcolor=blue!5]
+
+\begin{verbatim}
+    alter database 学生选课
+    add file
+    (
+        name = Stu_Data2,
+        filename = 'D:\Stu_data2.ndf',
+        size = 10mb,
+        maxsize = 2gb,
+        filegrowth = 15%
+    )
+
+    alter database 学生选课
+    add log file
+    (
+        name = Stu_log2,
+        filename = 'D:\Stu_log2.ldf',
+        size = 10mb,
+        maxsize = 500mb,
+        filegrowth = 15%
+    )
+\end{verbatim}
+
+\end{mdframed}
+
+\qquad 创建数据库模板：
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+    /*创建数据库*/
+    create database [这里填数据库名称]
+    on
+    (
+        name = [这里填文件的逻辑名称],
+        filename = [这里填文件的存储位置以及文件名称],
+        size = [这里填文件的初始大小],
+        maxsize = [这里填限制文件的最大存储大小
+                （如果要求无限大填unlimited）],
+        filegrowth = [这里填文件大小的增长速度]
+    )
+    /*接下来为log日志文件的建立*/
+    log on
+    (
+        /*格式与创建数据库部分一致*/
+    )
+\end{verbatim}
+\end{mdframed}
+
+\qquad 需要注意的是，数据库文件名的格式为\texttt{*.ndf}，
+而日志文件名的格式为\texttt{*.ldf}，注意区别文件后缀。
+
+\qquad 添加文件的格式与创建数据库的格式是一样的：
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+    /*为数据库添加文件*/
+    alter database [数据库名称]
+    add [这里填文件类型，如果要添加数据库文件就填file，
+        如果要添加日志文件就填log file]
+    (
+        /*这部分格式与创建数据库部分一致*/
+    )
+\end{verbatim}
+\end{mdframed}
+
+\begin{itemize}
+  \item \texttt{add file} 添加数据库文件
+  \item \texttt{add log file} 添加日志文件
+\end{itemize}

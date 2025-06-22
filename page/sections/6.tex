@@ -1,0 +1,333 @@
+\section{第六题：存储过程}
+
+\subsection{题目}
+
+\begin{enumerate}
+\item 创建存储过程（p\_stu），实现给定学号（局部变量名为@stu\_sno， 并取默认值为95001)，列出年龄大于该同学的学生信息，姓名和年龄（列名不变）。存储过程中的查询语句通过子查询实现。
+\item 执行上述存储过程，取95004实验。
+\item 创建存储过程（p\_stu2），实现给定学号（局部变量名为@stu\_sno， 并取默认值为95001)，列出与该学生属于同一系的其他学生姓名和年龄（原样显示）。存储过程中的查询语句通过自身链接（别名采用s1,s2，且通过s2表返回）实现。
+\item 通过95002验证。
+\item 创建存储过程p\_count\_cs,根据输入学生学号（@stu\_sno），返回该学生选了多少门课。返回值为整数型，且取名为@c\_ss。
+\item 检查学号为95001的情况验证准确性。输出变量取名为@pp\_cnos，打印内容为仅@pp\_cnos。考虑如果是指定课程号，返回有多少学生选了该课程，应该怎么写和验证。
+\end{enumerate}
+
+\subsection{解析}
+
+\qquad 在解析题目之前，我先讲一下存储过程的创建和执行。
+
+\subsubsection{存储过程的创建}
+
+\qquad 带参数的存储过程创建简单模板
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+create procedure 存储过程名
+[{@参数名称 参数数据类型} [ = 参数的默认值]
+[output] ] -- 参数后面带output的为输出参数
+[,...n]
+as
+sql_statement
+\end{verbatim}
+\end{mdframed}
+
+\qquad 简单示例
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+-- 带输入参数的存储过程
+create procedure p_student
+@Sno char(5)
+as
+select Sname, Sdept
+from student where Sno=@Sno
+
+-- 带输出参数的存储过程
+create procedure p_sum
+@var1 int, @var2 int,
+@var3 int output -- 输出参数
+as
+set @var3 = @var1 * @var2
+\end{verbatim}
+\end{mdframed}
+
+\qquad 不带参数的存储过程创建简单模板
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+create procedure 存储过程名
+as
+sql_statement
+\end{verbatim}
+\end{mdframed}
+
+\qquad \textbf{说明：} \emph{完整版模板考试不要求，
+\textcolor{Red}{变量前必须加@}。}
+
+\qquad 简单示例
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+create procedure p_course
+as
+select * from course
+\end{verbatim}
+\end{mdframed}
+
+\subsubsection{存储过程的执行}
+
+\qquad 不带参数的存储过程执行模板
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+exec 存储过程名
+\end{verbatim}
+\end{mdframed}
+
+\qquad 简单示例
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+exec p_course
+\end{verbatim}
+\end{mdframed}
+
+\qquad 带输入参数的存储过程
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+exec 存储过程名
+[@参数名 = 参数值][default]
+[,...n]
+\end{verbatim}
+\end{mdframed}
+
+\qquad 简单示例
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+exec p_grade2 @dept='计算机系'
+\end{verbatim}
+\end{mdframed}
+
+\qquad 带输出参数的存储过程
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+exec 存储过程名
+[[@参数名=]{参数值 ｜ @变量[output] | [默认值]}][,...n]
+\end{verbatim}
+\end{mdframed}
+
+\qquad 简单示例
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+declare @res int
+exec p_sum @var1=3,@var2=8,@res=@res output
+
+-- 或者使用参数顺序调用
+exec p_sum 3,8,@res output
+\end{verbatim}
+\end{mdframed}
+
+\subsubsection{问题一}
+
+\textbf{题目} \emph{创建存储过程（p\_stu），实现给定学号（局部变量名为@stu\_sno， 并取默认值为95001)，列出年龄大于该同学的学生信息，姓名和年龄（列名不变）。存储过程中的查询语句通过子查询实现。}
+
+\qquad 根据存储过程的知识可得到答案。
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+create procedure p_stu
+@stu_sno char(5) = '95001'
+as
+select Sname, Sage
+from student
+where Sage > (
+    select Sage from student
+    where Sno=@stu_sno
+)
+\end{verbatim}
+\end{mdframed}
+
+\subsubsection{问题二}
+
+\textbf{题目} \emph{执行上述存储过程，取95004实验。}
+
+\vspace{6pt}
+
+\qquad 传入95004作为参数执问题一的存储过程，得到答案。
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+exec p_stu '95004' -- 注意char类型需要加引号
+\end{verbatim}
+\end{mdframed}
+
+\subsubsection{问题三}
+
+\textbf{题目} \emph{创建存储过程（p\_stu2），实现给定学号（局部变量名为@stu\_sno， 并取默认值为95001)，列出与该学生属于同一系的其他学生姓名和年龄（原样显示）。存储过程中的查询语句通过自身链接（别名采用s1,s2，且通过s2表返回）实现。}
+
+\vspace{6pt}
+
+\qquad 难点在于如何查询。得到答案。
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+create procedure p_stu2
+@stu_sno char(5) = '95001'
+as
+select s2.Sname, s2.Sage
+from student s2 join student s1
+on s2.Sdept=s1.Sdept
+where s1.Sno=@stu_sno and s2.Sno != @stu_sno
+\end{verbatim}
+\end{mdframed}
+
+\qquad \textbf{注意：} \textcolor{red}{本题要查询的是“其他学生”，不包括输入的学生，注意排除。}
+
+\subsubsection{问题四}
+
+\textbf{题目} \emph{通过95002验证。}
+
+\vspace{6pt}
+
+\qquad 执行时传入参数即可得到答案。
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+exec p_stu2 '95002'
+\end{verbatim}
+\end{mdframed}
+
+\subsubsection{问题五}
+
+\textbf{题目} \emph{创建存储过程p\_count\_cs,根据输入学生学号（@stu\_sno），返回该学生选了多少门课。返回值为整数型，且取名为@c\_ss。}
+
+\vspace{6pt}
+
+\qquad 这道题的考点在于存储过程的输出参数。得到答案。
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+create procedure p_count_cs
+@stu_sno char(5), @c_ss int output
+as
+select @c_ss=count(*)
+from SC
+where Sno=@stu_sno
+\end{verbatim}
+\end{mdframed}
+
+\subsubsection{问题六}
+
+\textbf{题目} \emph{检查学号为95001的情况验证准确性。输出变量取名为@pp\_cnos，打印内容为仅@pp\_cnos。考虑如果是指定课程号，返回有多少学生选了该课程，应该怎么写和验证。}
+
+\vspace{6pt}
+
+\qquad 这题的考点是带参数的存储过程的执行。得到答案。
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+-- 定义变量
+declare @pp_cnos int
+
+-- 执行存储过程
+exec p_count_cs '95001', @pp_cnos output
+
+-- 打印结果
+print @pp_cnos
+\end{verbatim}
+\end{mdframed}
+
+\textbf{注意：} \textcolor{red}{输出参数的后面要加output，不要忘记。}
+
+\subsection{知识点拓展}
+
+\subsubsection{查看存储过程}
+
+\qquad 可以通过以下几种方式查看存储过程：
+
+\begin{enumerate}
+\item \textbf{查看所有存储过程}：
+    \begin{verbatim}
+    SELECT * FROM sys.procedures;
+    \end{verbatim}
+
+\item \textbf{查看存储过程定义}：
+    \begin{verbatim}
+    EXEC sp_helptext '存储过程名';
+    \end{verbatim}
+
+\item \textbf{查看存储过程参数}：
+    \begin{verbatim}
+    EXEC sp_help '存储过程名';
+    \end{verbatim}
+\end{enumerate}
+
+\textbf{示例：}
+\begin{verbatim}
+EXEC sp_helptext 'p_stu';
+\end{verbatim}
+
+\subsubsection{删除用户存储过程}
+
+\qquad 删除存储过程的语法：
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+DROP PROCEDURE 存储过程名;
+\end{verbatim}
+\end{mdframed}
+
+\textbf{示例：}
+\begin{verbatim}
+-- 删除单个存储过程
+DROP PROCEDURE p_stu;
+
+-- 删除多个存储过程
+DROP PROCEDURE p_stu, p_stu2, p_count_cs;
+\end{verbatim}
+
+\textbf{注意：}删除存储过程是不可逆操作，请谨慎执行。
+
+\subsubsection{修改存储过程}
+
+\qquad 修改存储过程的语法：
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+ALTER PROCEDURE 存储过程名
+[参数列表]
+AS
+BEGIN
+    -- 修改后的SQL语句
+END
+\end{verbatim}
+\end{mdframed}
+
+\textbf{示例：}
+\begin{lstlisting}[backgroundcolor=\color{Gray!10}]
+ALTER PROCEDURE p_stu
+@stu_sno CHAR(5) = '95001'
+AS
+BEGIN
+    SELECT Sname, Sage, Sdept  -- 增加系别信息
+    FROM student
+    WHERE Sage > (
+        SELECT Sage FROM student
+        WHERE Sno = @stu_sno
+    )
+END
+\end{lstlisting}
+
+\begin{mdframed}[backgroundcolor=yellow!10]
+\textbf{存储过程管理要点：}
+\begin{itemize}
+\item 修改存储过程时使用ALTER PROCEDURE，而不是重新CREATE
+\item 存储过程名在数据库中必须唯一
+\item 定期检查和优化存储过程的性能
+\item 为存储过程添加适当的注释，便于维护
+\item 测试存储过程的各种参数组合，确保逻辑正确
+\end{itemize}
+\end{mdframed}

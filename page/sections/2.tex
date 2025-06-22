@@ -1,0 +1,181 @@
+\section{第二题：视图与索引}
+
+\subsection{题目}
+
+\qquad 视图与索引
+
+\begin{enumerate}
+  \item 创建带加密选课视图view\_sc，列名依次显示为 学号，姓名，年龄
+  \item 在学生表中的sname上创建非聚集索引(Sname\_ind)
+  \item 在给课程名创建唯一非聚集索引（Cname\_ind）
+\end{enumerate}
+
+\subsection{解析}
+\qquad 三个问题，分步进行解析。
+
+\subsubsection{第一问}
+
+\textbf{题目} \emph{创建带加密选课视图view\_sc，列名依次显示为 学号，姓名，年龄。}
+
+\vspace{6pt}
+
+\qquad 分析一下创建视图的模板：
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+create view [视图名称]([列名显示：name1,name2,...])
+/*列名显示部分设置的列名一一对应select选出来的列*/
+[with encryption] /*如果要求创建带加密的视图，需要添加这一句*/
+as
+/*下面为需要展示的内容的select语句*/
+select [col1,col2,...]
+...
+\end{verbatim}
+\end{mdframed}
+
+\qquad 根据创建视图的模板可以得到答案：
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+create view view_sc(学号,姓名,年龄)
+with encryption
+as
+select sno,sname,sage
+from student
+\end{verbatim}
+\end{mdframed}
+
+\subsubsection{第二问}
+
+\textbf{题目} \emph{在学生表中的sname上创建非聚集索引(Sname\_ind)}
+
+\qquad 分析一下创建索引的模板：
+
+\begin{mdframed}[backgroundcolor=gray!10]
+  \label{index:1}
+\begin{verbatim}
+create [unique 唯一索引] [clustered 聚集索引| nonclustered 非聚集索引]
+/*如果不填默认为非聚集索引 nonclustered*/
+index [填索引名称]
+on [表名｜视图名](这个表或视图中的列名：[col1,col2,...])
+\end{verbatim}
+\end{mdframed}
+
+\qquad 根据模板可以得到答案：
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+create index Sname_ind
+on Student(sname)
+\end{verbatim}
+\end{mdframed}
+
+\subsubsection{第三问}
+
+\textbf{题目} \emph{在给课程名创建唯一非聚集索引（Cname\_ind）}
+
+\qquad 根据创建索引的模板\ref{index:1}可以得到答案：
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+create unique nonclustered /*题目要求唯一，需要加unique*/
+index Cname_ind
+on Course(Cname)
+\end{verbatim}
+\end{mdframed}
+
+\subsection{知识点拓展}
+
+\subsubsection{索引类型及特征}
+
+\paragraph{聚集索引（Clustered Index）}
+\begin{itemize}
+  \item \textbf{特征}：数据行的物理存储顺序与索引键值的逻辑顺序相同
+  \item \textbf{限制}：每个表只能有一个聚集索引
+  \item \textbf{作用}：提高范围查询和排序操作的效率
+  \item \textbf{适用场景}：经常进行范围查询的列，如主键、日期列
+\end{itemize}
+
+\paragraph{非聚集索引（Non-clustered Index）}
+\begin{itemize}
+  \item \textbf{特征}：索引的逻辑顺序与数据行的物理存储顺序无关
+  \item \textbf{限制}：每个表可以有多个非聚集索引（最多999个）
+  \item \textbf{作用}：提高特定列的查询速度，但不改变数据的物理存储
+  \item \textbf{适用场景}：经常用于WHERE子句、JOIN条件的列
+\end{itemize}
+
+\paragraph{唯一索引（Unique Index）}
+\begin{itemize}
+  \item \textbf{特征}：确保索引键值的唯一性，不允许重复值
+  \item \textbf{作用}：既提高查询性能，又保证数据完整性
+  \item \textbf{适用场景}：需要保证唯一性的列，如身份证号、学号等
+\end{itemize}
+
+\paragraph{复合索引（Composite Index）}
+\begin{itemize}
+  \item \textbf{特征}：基于多个列创建的索引
+  \item \textbf{作用}：提高多列组合查询的效率
+  \item \textbf{注意}：遵循"最左前缀"原则，索引列的顺序很重要
+\end{itemize}
+
+\subsubsection{索引使用原则}
+
+\begin{enumerate}
+  \item \textbf{选择性原则}：在选择性高（重复值少）的列上创建索引效果更好
+  \item \textbf{频率原则}：在经常用于查询条件的列上创建索引
+  \item \textbf{维护成本}：索引会增加INSERT、UPDATE、DELETE操作的开销
+  \item \textbf{存储空间}：索引需要额外的存储空间
+\end{enumerate}
+
+\begin{mdframed}[backgroundcolor=yellow!10]
+  \textbf{小贴士：}索引是一把双刃剑，能够显著提高查询性能，但也会增加数据修改的开销和存储空间的占用。因此需要根据实际的查询需求和数据更新频率来合理设计索引策略。
+\end{mdframed}
+
+\subsubsection{索引的管理方式}
+
+\textbf{1. 删除索引}
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+drop index [表名.索引名 | 视图名.索引名]
+
+/*一个简单的例子：删除第二问中的Sname_ind索引*/
+drop index Student.Sname_ind
+\end{verbatim}
+\end{mdframed}
+
+\textbf{注意：}\texttt{表在创建时如果对某一列进行了主键约束会自动自动创建一个索引，这个索引是无法用drop index进行删除的。}
+
+\vspace{6pt}
+
+\textbf{2. 查看索引}
+
+\qquad 可以使用SSMS软件进行查看，也可以用代码进行查看。这里介绍一下代码怎么查看。
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+use [数据库名]
+go
+sp_helpindex [表名]
+go
+\end{verbatim}
+\end{mdframed}
+
+\subsubsection{重命名索引}
+
+\qquad 利用sp\_rename可以重命名索引
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+use [数据库名]
+go
+sp_rename '表名.原索引名', '新索引名'
+go
+
+/*举一个例子*/
+use 学生选课
+go
+sp_rename 'student.Sname_index', 'index_Sname'
+go
+\end{verbatim}
+\end{mdframed}

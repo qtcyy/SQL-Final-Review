@@ -1,0 +1,97 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{ctex}
+\usepackage{float}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{multirow}
+\usepackage{enumitem}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+\usepackage{listings}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{fontspec} % 用于设置字体
+\setmonofont{JetBrains Mono}[Scale=0.85] % 设置等宽字体为JetBrains Mono
+\usepackage[framemethod=TikZ]{mdframed}
+\usepackage{tikz}  % 添加TikZ包用于绘图
+\usetikzlibrary{shapes,positioning}
+\usepackage{hyperref}  % 添加超链接支持，使目录可点击跳转
+\hypersetup{
+  colorlinks=true,  % 启用彩色链接
+  linkcolor=blue,   % 内部链接颜色（目录、交叉引用等）
+  urlcolor=blue,    % URL链接颜色
+  citecolor=blue,   % 引用链接颜色
+  bookmarksdepth=3, % PDF书签深度
+  pdfstartview=FitH % PDF打开时的视图方式
+}
+% 在导言区进行样式设置
+\lstset{
+  language=SQL, % 设置语言
+  basicstyle=\ttfamily\small, % 设置字体族和大小
+  breaklines=true, % 自动换行
+  keywordstyle=\bfseries\color{Purple}, % C语言关键字：紫色粗体
+  morekeywords={uint32_t,uint8_t,float,char,static,const}, % C语言扩展关键字
+  emph=[1]{delay_init,key_init,lcd_init,infrared_init,rgb_init,buzzer_init,led_init,usart_init,htu21d_init,fan_pwm_init}, % 初始化函数
+  emphstyle=[1]\bfseries\color{Red}, % 初始化函数：红色粗体
+  emph=[2]{htu21d_t,htu21d_h,get_infrared_status,fan_pwm_control,rgb_ctrl,led_control,buzzer_tweet}, % 硬件控制函数
+  emphstyle=[2]\bfseries\color{Orange}, % 硬件控制函数：橙色粗体
+  emph=[3]{update_display,get_centered_x,check_uart_command,send_system_status,auto_control,check_human_presence}, % 逻辑函数
+  emphstyle=[3]\bfseries\color{Blue}, % 逻辑函数：蓝色粗体
+  emph=[4]{sprintf,printf,strncmp,strlen,delay_ms,delay_count}, % 标准库函数
+  emphstyle=[4]\color{Magenta}, % 标准库函数：洋红色
+  commentstyle=\itshape\color{ForestGreen}, % 注释：森林绿斜体
+  stringstyle=\color{Maroon}, % 字符串：栗色
+  identifierstyle=\color{Black}, % 标识符：黑色
+  numberstyle=\tiny\color{Gray}, % 数字：灰色小字
+  columns=flexible,
+  numbers=none, % 不显示行号
+  % numbersep=1.5em, % 设置行号的具体位置
+  % numberstyle=\footnotesize\color{Gray}, % 行号样式
+  frame=single, % 边框
+  framesep=1em, % 设置代码与边框的距离
+  rulecolor=\color{lightgray}, % 边框颜色
+  %backgroundcolor=\color{Gray!10}, % 背景色：淡灰色
+  tabsize=4, % Tab键宽度
+  showstringspaces=false % 不显示字符串中的空格标记
+}
+
+\begin{document}
+{
+  \centering
+  \fontsize{20pt}{24pt}\selectfont
+  \begin{minipage}[c]{0.7\textwidth}
+    \centering
+    数据库期末复习笔记
+  \end{minipage}%
+  \hfill
+  \begin{minipage}[c]{0.2\textwidth}
+    \raggedleft
+    \includegraphics[width=3cm]{sticker.pdf}
+  \end{minipage}
+}
+
+\tableofcontents
+
+\raggedright
+
+\newpage
+
+\input{../sections/1.tex}
+
+\input{../sections/2.tex}
+
+\input{../sections/3.tex}
+
+\input{../sections/4.tex}
+
+\input{../sections/5.tex}
+
+\input{../sections/6.tex}
+
+\input{../sections/7.tex}
+
+\end{document}

@@ -1,0 +1,310 @@
+\section{第七题：安全管理}
+
+\subsection{题目}
+
+\begin{enumerate}
+  \item 请建立SQL Server登录名sql\_user1，并映射至同名用户名。其中登录密码为'nulibeikao'。
+  \item 对象权限，授予sql\_user1用户在student表中的插入，更新，查询权利。
+  \item 语句权限，允许sql\_user1用户在数据库上创建视图、存储过程的权限。
+  \item 语句权限，拒绝sql\_user1用户在数据库上创建表的权限
+  \item 对象权限，拒绝sql\_user1用户在sc表上删除数据的权利
+\end{enumerate}
+
+\subsection{解析}
+
+\qquad 这一章的内容基本都可以通过SSMS软件进行图形化操作，详见书本第九章P202。
+这里主要介绍如何通过指令操作。
+
+\subsubsection{问题一}
+
+\textbf{题目} \emph{请建立SQL Server登录名sql\_user1，并映射至同名用户名。其中登录密码为'nulibeikao'。}
+
+\qquad 分析创建和映射数据库用户的简单模板。
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+-- 创建数据库用户
+create user 用户名
+[with Password=密码]
+[DEFAULT_DATABASE=默认数据库]
+
+-- 创建数据库登录名
+create login 登录名
+[with Password=密码]
+
+-- 映射登录名到数据库用户
+create user 用户名
+for login 登录名
+\end{verbatim}
+\end{mdframed}
+
+\qquad \textbf{用户名、登录名、映射关系简介：}
+
+\begin{itemize}
+  \item \textbf{登录名（Login）}：是SQL Server服务器级别的安全主体，用于连接到SQL Server实例。登录名存储在master数据库中，是进入SQL Server的"钥匙"。
+
+  \item \textbf{用户名（User）}：是数据库级别的安全主体，存在于特定的数据库中。用户名决定了在该数据库内能执行哪些操作。
+
+  \item \textbf{映射关系}：登录名和用户名之间需要建立映射关系，这样登录名才能访问特定的数据库。一个登录名可以映射到多个数据库中的不同用户名。一个登录名在一个数据库中只能有有唯一一个数据库用户与之对应。
+
+  \item \textbf{权限层次}：
+    \begin{itemize}
+      \item 服务器级权限 $\rightarrow$ 登录名
+      \item 数据库级权限 $\rightarrow$ 用户名
+    \end{itemize}
+\end{itemize}
+
+\qquad 简单来说：\textbf{登录名负责"进门"，用户名负责"干活"}。先用登录名连接到SQL Server，再通过映射的用户名在具体数据库中执行操作。
+
+\qquad 根据模板可以得到答案。
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+-- 创建登录名
+create login sql_user1
+with Password='nulibeikao'
+
+-- 映射登录名到用户
+create user sql_user1
+for login sql_user1
+\end{verbatim}
+\end{mdframed}
+
+\textbf{注意：} \textcolor{Red}{如果题目中要求建立映射关系，但前面没有建立登录名，要先建立登录名再建立映射关系。}
+
+\subsubsection{问题二}
+
+\textbf{题目} \emph{对象权限，授予sql\_user1用户在student表中的插入，更新，查询权利。}
+
+\vspace{6pt}
+
+\qquad 这道题涉及到数据库用户权限管理，我先介绍一下数据库的权限类别，如表\ref{table:2}。
+
+\begin{table}[H]
+  \centering
+  \begin{tabularx}{\textwidth}{p{5cm}|X}
+    \toprule
+    \textbf{权限类别} & \textbf{描述} \\
+    \hline
+    SELECT & 查询权限，允许用户查看表或视图中的数据 \\
+    INSERT & 插入权限，允许用户向表中添加新的数据行 \\
+    UPDATE & 更新权限，允许用户修改表中现有的数据 \\
+    DELETE & 删除权限，允许用户删除表中的数据行 \\
+    REFERENCES & 引用权限，允许用户创建引用该表的外键约束 \\
+    ALTER & 修改权限，允许用户修改表结构（添加/删除列等） \\
+    INDEX & 索引权限，允许用户在表上创建或删除索引 \\
+    EXECUTE & 执行权限，允许用户执行存储过程或函数 \\
+    CREATE TABLE & 创建表权限，允许用户在数据库中创建新表 \\
+    CREATE VIEW & 创建视图权限，允许用户在数据库中创建视图 \\
+    CREATE PROCEDURE & 创建存储过程权限，允许用户创建存储过程 \\
+    \bottomrule
+  \end{tabularx}
+  \caption{SQL Server权限类别说明}
+  \label{table:2}
+\end{table}
+
+\qquad 下面给出授予用户权限的模板并给出几个例子。
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+-- 模板
+grant 权限类别[,...n] [on 表名[,...n]] to 用户名
+
+-- 授予用户创建数据库的权限
+grant create database to Qtcyy
+
+-- 授予用户对student表进行插入、更新数据的权限
+grant insert, update on student to Qtcyy
+\end{verbatim}
+\end{mdframed}
+
+\qquad 根据模板可以得到答案。
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+grant insert, update, select on student to sql_user1
+\end{verbatim}
+\end{mdframed}
+
+\textbf{老师提醒：} \textcolor{Red}{注意题目的各个权限的顺序，考试系统内标准比较严，请按照顺序给。}
+
+\subsubsection{问题三}
+
+\textbf{题目} \emph{语句权限，允许sql\_user1用户在数据库上创建视图、存储过程的权限。}
+
+\vspace{6pt}
+
+\qquad 这题考查的是创建视图、存储过程的权限，根据模板可以得到答案。
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+grant create view, create procedure to sql_user1
+\end{verbatim}
+\end{mdframed}
+
+\subsubsection{问题四}
+
+\textbf{题目} \emph{语句权限，拒绝sql\_user1用户在数据库上创建表的权限}
+
+\vspace{6pt}
+
+\qquad 这道题涉及到拒绝用户权限，需要使用DENY语句。下面给出拒绝用户权限的模板。
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+-- 拒绝权限模板
+deny 权限类别[,...n] [on 表名[,...n]] to 用户名
+
+-- 拒绝用户创建表的权限
+deny create table to Qtcyy
+
+-- 拒绝用户对student表进行删除数据的权限
+deny delete on student to Qtcyy
+\end{verbatim}
+\end{mdframed}
+
+\qquad 根据模板可以得到答案。
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+deny create table to sql_user1
+\end{verbatim}
+\end{mdframed}
+
+\qquad \textbf{权限控制语句对比：}
+
+\begin{itemize}
+  \item \textbf{GRANT}：授予权限，允许用户执行某些操作
+  \item \textbf{DENY}：拒绝权限，明确禁止用户执行某些操作
+  \item \textbf{REVOKE}：撤销权限，取消之前授予或拒绝的权限
+\end{itemize}
+
+\textbf{注意：} \textcolor{Red}{DENY的优先级高于GRANT，即使用户通过其他角色获得了权限，DENY仍然有效。}
+
+\subsubsection{问题五}
+
+\textbf{题目} \emph{对象权限，拒绝sql\_user1用户在sc表上删除数据的权利}
+
+\vspace{6pt}
+
+\qquad 根据模板可以得到答案。
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+deny delete on sc to sql_user1
+\end{verbatim}
+\end{mdframed}
+
+\subsection{知识点拓展}
+
+\subsubsection{身份验证模式}
+
+\qquad SQL Server支持两种身份验证模式：
+
+\begin{itemize}
+  \item \textbf{Windows身份验证模式}：
+    \begin{itemize}
+      \item 使用Windows用户账户或Windows组账户进行身份验证
+      \item 更安全，因为利用了Windows的安全机制
+      \item 支持密码策略、账户锁定等Windows安全功能
+      \item 适用于企业内部网络环境
+    \end{itemize}
+
+  \item \textbf{混合模式（SQL Server和Windows身份验证）}：
+    \begin{itemize}
+      \item 同时支持Windows身份验证和SQL Server身份验证
+      \item SQL Server身份验证使用存储在SQL Server中的登录名和密码
+      \item 适用于需要支持非Windows客户端的环境
+      \item 默认启用sa账户（系统管理员账户）
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{服务器角色}
+
+\qquad SQL Server提供了预定义的服务器级固定角色，用于管理服务器级权限：
+
+\begin{table}[H]
+  \centering
+  \begin{tabularx}{\textwidth}{p{4cm}|X}
+    \toprule
+    \textbf{服务器角色} & \textbf{权限描述} \\
+    \hline
+    sysadmin & 系统管理员，拥有服务器的完全控制权限 \\
+    serveradmin & 服务器管理员，可以更改服务器范围的配置选项和关闭服务器 \\
+    securityadmin & 安全管理员，管理登录名和权限，可以重置密码 \\
+    processadmin & 进程管理员，可以终止在SQL Server实例中运行的进程 \\
+    setupadmin & 安装管理员，可以添加和删除链接服务器 \\
+    bulkadmin & 批量管理员，可以执行BULK INSERT语句 \\
+    diskadmin & 磁盘管理员，管理磁盘文件 \\
+    dbcreator & 数据库创建者，可以创建、修改、删除和还原任何数据库 \\
+    public & 公共角色，每个SQL Server登录名都属于此角色 \\
+    \bottomrule
+  \end{tabularx}
+  \caption{SQL Server服务器角色}
+  \label{table:3}
+\end{table}
+
+\qquad \textbf{添加用户到服务器角色的语法：}
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+-- 将登录名添加到服务器角色
+ALTER SERVER ROLE 角色名 ADD MEMBER 登录名
+
+-- 示例：将sql_user1添加到dbcreator角色
+ALTER SERVER ROLE dbcreator ADD MEMBER sql_user1
+\end{verbatim}
+\end{mdframed}
+
+\subsubsection{数据库角色}
+
+\qquad 数据库角色用于管理数据库级别的权限，包括固定数据库角色和用户定义角色：
+
+\begin{table}[H]
+  \centering
+  \begin{tabularx}{\textwidth}{p{4cm}|X}
+    \toprule
+    \textbf{数据库角色} & \textbf{权限描述} \\
+    \hline
+    db\_owner & 数据库所有者，拥有数据库的完全控制权限 \\
+    db\_accessadmin & 访问管理员，可以添加或删除数据库用户 \\
+    db\_securityadmin & 安全管理员，可以管理角色成员身份和权限 \\
+    db\_ddladmin & DDL管理员，可以运行任何DDL命令（CREATE、ALTER、DROP） \\
+    db\_backupoperator & 备份操作员，可以备份数据库 \\
+    db\_datareader & 数据读取者，可以从所有用户表中读取数据 \\
+    db\_datawriter & 数据写入者，可以在所有用户表中添加、更新或删除数据 \\
+    db\_denydatareader & 拒绝数据读取者，不能读取数据库中的任何数据 \\
+    db\_denydatawriter & 拒绝数据写入者，不能修改数据库中的任何数据 \\
+    public & 公共角色，每个数据库用户都属于此角色 \\
+    \bottomrule
+  \end{tabularx}
+  \caption{SQL Server数据库角色}
+  \label{table:4}
+\end{table}
+
+\qquad \textbf{数据库角色管理语法：}
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+-- 将用户添加到数据库角色
+ALTER ROLE 角色名 ADD MEMBER 用户名
+
+-- 从数据库角色中删除用户
+ALTER ROLE 角色名 DROP MEMBER 用户名
+
+-- 创建用户定义的数据库角色
+CREATE ROLE 角色名
+
+-- 示例：将sql_user1添加到db_datareader角色
+ALTER ROLE db_datareader ADD MEMBER sql_user1
+\end{verbatim}
+\end{mdframed}
+
+\qquad \textbf{权限继承关系：}
+
+\begin{itemize}
+  \item 用户可以同时属于多个角色
+  \item 用户获得所属所有角色的权限（权限的并集）
+  \item DENY权限始终优先于GRANT权限
+  \item 角色权限与直接授予用户的权限相互补充
+\end{itemize}

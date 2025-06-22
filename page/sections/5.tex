@@ -1,0 +1,153 @@
+\section{第五题：游标的创建与使用}
+
+\subsection{题目}
+
+\qquad 将student表中的同学按照姓名升序后的前7位同学的相关信息打印在消息窗格中，格式为：姓名+‘的年龄为’+年龄。
+游标名为stu\_cur，为了方便，将姓名、年龄存储在局部变量为@stu\_name, @stu\_age上。 局部变量声明在打开游标之前。
+
+\subsection{解析}
+
+\qquad 这道题需要创建并打开游标，所以我先介绍一下游标的创建。
+
+\subsubsection{创建游标}
+
+\qquad 创建游标的简单模板
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+declare 游标名 cursor
+for 数据库查询语句
+\end{verbatim}
+\end{mdframed}
+
+\qquad \textbf{说明：} \emph{这不是完整的游标创建模板，完整版考试不要求。}
+
+\qquad 简单示例
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+declare Mycur cursor
+for select Sno,Sname
+from student
+where Ssex='男'
+\end{verbatim}
+\end{mdframed}
+
+\subsubsection{打开游标}
+
+\qquad 打开游标的模板
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+open [local | global] 游标名 ｜ 游标变量名
+\end{verbatim}
+\end{mdframed}
+
+\qquad 简单示例
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+open Mycur
+\end{verbatim}
+\end{mdframed}
+
+\subsubsection{读取游标}
+
+\qquad 游标的读取使用FETCH语句，其过程分两步：
+
+\begin{enumerate}
+  \item 将游标当前指向的记录保存到一个局部变量中
+  \item 游标自动移动到下一条记录
+\end{enumerate}
+
+\qquad 当记录读入局部变量后，就可以根据需要进行处理。
+
+\qquad 读取游标的模板
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+fetch [[next | prior | first | last |
+absolute{n | @nvar | relative{n | @nvar}}]
+from ] 游标名 [into @局部变量名 [,...n]]
+\end{verbatim}
+\end{mdframed}
+
+\qquad 参数含义如\ref{table:cursor:1}。
+
+\begin{table}[h]
+  \centering
+  \begin{tabular}{|l|l|}
+    \hline
+    \textbf{参数} & \textbf{含义} \\
+    \hline
+    NEXT & 移动到下一条记录（默认选项） \\
+    \hline
+    PRIOR & 移动到上一条记录 \\
+    \hline
+    FIRST & 移动到第一条记录 \\
+    \hline
+    LAST & 移动到最后一条记录 \\
+    \hline
+    ABSOLUTE n & 移动到第n条记录（正数从头开始，负数从尾开始） \\
+    \hline
+    RELATIVE n & 相对当前位置移动n条记录（正数向前，负数向后） \\
+    \hline
+    INTO @变量名 & 将获取的数据存储到指定的局部变量中 \\
+    \hline
+  \end{tabular}
+  \caption{FETCH语句参数含义}
+  \label{table:cursor:1}
+\end{table}
+
+\subsubsection{题目解答}
+
+\qquad 根据题目要求，需要创建游标并获取前7位学生信息。完整代码如下：
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+-- 声明局部变量（在打开游标之前）
+declare @stu_name varchar(20);
+declare @stu_age int;
+declare @count int = 0;
+
+-- 声明游标
+declare stu_cur cursor
+for select sname, sage
+    from student
+    order by sname asc;
+
+-- 打开游标
+open stu_cur;
+
+-- 读取第一条记录
+fetch next from stu_cur into @stu_name, @stu_age;
+
+-- 循环处理前7条记录
+while @@fetch_status = 0 and @count < 7
+begin
+    -- 打印信息到消息窗格
+    print @stu_name + '的年龄为' + cast(@stu_age as varchar(10));
+
+    -- 计数器加1
+    set @count = @count + 1;
+
+    -- 读取下一条记录
+    fetch next from stu_cur into @stu_name, @stu_age;
+end
+
+-- 关闭游标
+close stu_cur;
+
+-- 释放游标
+deallocate stu_cur;
+\end{verbatim}
+\end{mdframed}
+
+\textbf{代码说明：}
+\begin{itemize}
+  \item \textbf{@@FETCH\_STATUS}：系统变量，表示上一次FETCH操作的状态（0表示成功）
+  \item \textbf{CAST函数}：将整数类型的年龄转换为字符串，便于拼接
+  \item \textbf{计数器@count}：确保只处理前7条记录
+  \item \textbf{CLOSE}：关闭游标，释放资源
+  \item \textbf{DEALLOCATE}：释放游标内存
+\end{itemize}

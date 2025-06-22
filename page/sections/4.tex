@@ -1,0 +1,327 @@
+\section{第四题：数据表的创建与修改}
+
+\subsection{题目}
+
+\begin{enumerate}
+  \item 创建下述course表
+
+    \begin{tabular}{|l|l|l|l|}
+      \hline
+      列名 & 数据类型 & 宽度 & 为空性 \\
+      \hline
+      cno & char & 6 & \\
+      \hline
+      cname & char & 20 & \\
+      \hline
+      credit & tinyint & & $\surd$ \\
+      \hline
+    \end{tabular}
+  \item 在course表中添加一列semester，整数型，非空
+  \item 将cno设置成主键(主键名字为pk\_seme)
+  \item 在sc表中将cno设置为外键（外键名字为fk\_cno）
+\end{enumerate}
+
+\subsection{解析}
+
+\subsubsection{问题一：创建表}
+
+\textbf{问题} \emph{创建course表}
+
+\qquad 分析创建表的模板：
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+CREATE TABLE 表名
+(
+    列名1 数据类型(长度) [约束条件],
+    列名2 数据类型(长度) [约束条件],
+    ...
+    列名n 数据类型(长度) [约束条件],
+    [表级约束]
+)
+\end{verbatim}
+\end{mdframed}
+
+\textbf{常用数据类型：}
+\begin{itemize}
+  \item \textbf{char(n)}：固定长度字符串
+  \item \textbf{varchar(n)}：可变长度字符串
+  \item \textbf{int}：整数型
+  \item \textbf{tinyint}：小整数型（0-255）
+  \item \textbf{decimal(p,s)}：定点数
+  \item \textbf{datetime}：日期时间型
+\end{itemize}
+
+\textbf{约束条件：}
+\begin{itemize}
+  \item \textbf{NOT NULL}：非空约束
+  \item \textbf{NULL}：允许为空（默认）
+  \item \textbf{PRIMARY KEY}：主键约束
+  \item \textbf{UNIQUE}：唯一约束
+  \item \textbf{DEFAULT 值}：默认值约束
+\end{itemize}
+
+\qquad 根据题目要求，创建course表的答案如下：
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+CREATE TABLE course
+(
+    cno CHAR(6) NOT NULL,
+    cname CHAR(20) NOT NULL,
+    credit TINYINT NULL
+)
+\end{verbatim}
+\end{mdframed}
+
+\subsubsection{问题二：添加列}
+
+\textbf{问题} \emph{在course表中添加一列semester，整数型，非空}
+
+\qquad 分析添加列的模板：
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+ALTER TABLE 表名
+ADD 列名 数据类型(长度) [约束条件]
+\end{verbatim}
+\end{mdframed}
+
+\textbf{说明：}
+\begin{itemize}
+  \item \textbf{ALTER TABLE}：修改表结构的关键字
+  \item \textbf{ADD}：添加列的操作
+  \item 可以同时添加多列，用逗号分隔
+  \item 添加的列默认为NULL，如需非空需显式指定NOT NULL
+\end{itemize}
+
+\qquad 根据题目要求，添加semester列的答案如下：
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+ALTER TABLE course
+ADD semester INT NOT NULL
+\end{verbatim}
+\end{mdframed}
+
+\subsubsection{问题三：设置主键}
+
+\textbf{问题} \emph{将cno设置成主键(主键名字为pk\_seme)}
+
+\qquad 分析添加主键约束的模板：
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+ALTER TABLE 表名
+ADD CONSTRAINT 约束名 PRIMARY KEY (列名)
+\end{verbatim}
+\end{mdframed}
+
+\textbf{说明：}
+\begin{itemize}
+  \item \textbf{ADD CONSTRAINT}：添加约束的关键字
+  \item \textbf{约束名}：自定义的约束名称，便于管理
+  \item \textbf{PRIMARY KEY}：主键约束类型
+  \item 主键列必须为NOT NULL，且值唯一
+  \item 一个表只能有一个主键
+\end{itemize}
+
+\qquad 根据题目要求，设置cno为主键的答案如下：
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+ALTER TABLE course
+ADD CONSTRAINT pk_seme PRIMARY KEY (cno)
+\end{verbatim}
+\end{mdframed}
+
+\textbf{拓展说明}
+
+\begin{mdframed}[backgroundcolor=yellow!10]
+  \textbf{主键的作用：}
+  \begin{itemize}
+    \item \textbf{唯一性标识}：确保表中每一行都有唯一的标识符，不允许重复值
+    \item \textbf{非空约束}：主键列不能包含NULL值，保证数据完整性
+    \item \textbf{建立索引}：系统自动为主键创建唯一聚集索引，提高查询性能
+    \item \textbf{外键引用}：作为其他表外键的参照目标，建立表间关系
+    \item \textbf{数据完整性}：防止插入重复或无效的数据，维护数据质量
+    \item \textbf{优化存储}：聚集索引按主键顺序物理存储数据，提高I/O效率
+  \end{itemize}
+\end{mdframed}
+
+\subsubsection{问题四：设置外键}
+
+\textbf{问题} \emph{在sc表中将cno设置为外键（外键名字为fk\_cno）}
+
+\qquad 外键可以在创建表时定义，也可以在表创建后添加。
+
+\textbf{方式一：创建表时定义外键}
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+CREATE TABLE 表名
+(
+    列名1 数据类型 约束条件,
+    列名2 数据类型 约束条件,
+    ...
+    CONSTRAINT 外键名 FOREIGN KEY (列名)
+        REFERENCES 参照表名(参照列名)
+)
+\end{verbatim}
+\end{mdframed}
+
+\textbf{方式二：表创建后添加外键}
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+ALTER TABLE 表名
+ADD CONSTRAINT 外键名
+    FOREIGN KEY (列名) REFERENCES 参照表名(参照列名)
+\end{verbatim}
+\end{mdframed}
+
+\textbf{说明：}
+\begin{itemize}
+  \item \textbf{FOREIGN KEY}：定义外键约束
+  \item \textbf{REFERENCES}：指定参照的主表和主键
+  \item 外键列的数据类型必须与参照列相同
+  \item 参照列必须是主键或唯一键
+\end{itemize}
+
+\qquad 根据题目要求，在sc表中设置cno为外键的答案如下：
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+ALTER TABLE sc
+ADD CONSTRAINT fk_cno
+    FOREIGN KEY (cno) REFERENCES course(cno)
+\end{verbatim}
+\end{mdframed}
+
+\begin{mdframed}[backgroundcolor=yellow!10]
+  \textbf{外键的作用：}
+  \begin{itemize}
+    \item \textbf{维护参照完整性}：确保子表中的外键值必须在父表的主键中存在
+    \item \textbf{防止数据不一致}：避免插入无效的关联数据
+    \item \textbf{级联操作}：可设置级联删除或更新，保持数据同步
+    \item \textbf{建立表间关系}：明确表与表之间的逻辑关系
+    \item \textbf{约束数据操作}：限制对父表主键的删除和修改操作
+    \item \textbf{提高数据可靠性}：防止孤立记录的产生
+  \end{itemize}
+\end{mdframed}
+
+\subsection{知识点拓展}
+
+\subsubsection{唯一约束}
+
+\qquad 唯一约束确保列中的值是唯一的，但允许NULL值。
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+-- 创建表时定义
+CREATE TABLE 表名
+(
+    列名 数据类型 UNIQUE,
+    ...
+)
+
+-- 后续添加
+ALTER TABLE 表名
+ADD CONSTRAINT 约束名 UNIQUE (列名)
+\end{verbatim}
+\end{mdframed}
+
+\textbf{示例：}
+\begin{verbatim}
+ALTER TABLE student
+ADD CONSTRAINT uk_student_email UNIQUE (email);
+\end{verbatim}
+
+\subsubsection{检查约束}
+
+\qquad 检查约束用于限制列中允许的值范围。
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+-- 创建表时定义
+CREATE TABLE 表名
+(
+    列名 数据类型 CHECK (条件表达式),
+    ...
+)
+
+-- 后续添加
+ALTER TABLE 表名
+ADD CONSTRAINT 约束名 CHECK (条件表达式)
+\end{verbatim}
+\end{mdframed}
+
+\textbf{示例：}
+\begin{verbatim}
+ALTER TABLE student
+ADD CONSTRAINT ck_student_age CHECK (age >= 0 AND age <= 150);
+\end{verbatim}
+
+\subsubsection{默认值约束}
+
+\qquad 默认值约束为列提供默认值，在插入数据时如果未指定值则使用默认值。
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+-- 创建表时定义
+CREATE TABLE 表名
+(
+    列名 数据类型 DEFAULT 默认值,
+    ...
+)
+
+-- 后续添加
+ALTER TABLE 表名
+ADD CONSTRAINT 约束名 DEFAULT 默认值 FOR 列名
+\end{verbatim}
+\end{mdframed}
+
+\textbf{示例：}
+\begin{verbatim}
+ALTER TABLE student
+ADD CONSTRAINT df_student_status DEFAULT '在读' FOR status;
+\end{verbatim}
+
+\subsubsection{约束禁用和启用}
+
+\qquad 可以临时禁用或启用约束，常用于数据导入或维护操作。
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+-- 禁用约束
+ALTER TABLE 表名 NOCHECK CONSTRAINT 约束名;
+
+-- 启用约束
+ALTER TABLE 表名 CHECK CONSTRAINT 约束名;
+
+-- 删除约束
+ALTER TABLE 表名 DROP CONSTRAINT 约束名;
+\end{verbatim}
+\end{mdframed}
+
+\textbf{示例：}
+\begin{verbatim}
+-- 禁用外键约束
+ALTER TABLE sc NOCHECK CONSTRAINT fk_cno;
+
+-- 启用外键约束
+ALTER TABLE sc CHECK CONSTRAINT fk_cno;
+
+-- 删除约束
+ALTER TABLE sc DROP CONSTRAINT fk_cno;
+\end{verbatim}
+
+\begin{mdframed}[backgroundcolor=yellow!10]
+  \textbf{约束管理要点：}
+  \begin{itemize}
+    \item 约束名称应具有描述性，便于识别和管理
+    \item 禁用约束后记得及时启用，避免数据完整性问题
+    \item 删除约束前要谨慎考虑，确保不会影响数据完整性
+    \item 可以通过系统视图查询表中的所有约束信息
+  \end{itemize}
+\end{mdframed}

@@ -1,0 +1,345 @@
+\section{第三题：触发器}
+
+\subsection{题目}
+
+\begin{enumerate}
+  \item 通过创建一个后触发型触发器tr\_sc\_del，限制删除‘计算机系’学生的信息，并给出信息“不能删除计算机系学生选课信息！”（通过多表连接，不要用别名）
+  \item 通过创建一个前触发型触发器tr\_stu\_del，限制删除有选课的学生信息。(注意：通过内连接实现，不取别名，临时表在前)
+  \item 创建一个用于防止用户删除学生选课数据库中任何数据表的触发器tr\_droptable。
+  \item 为了必须删除一个选课记录（学号95001， 课程号001），请先抑制触发器tr\_sc\_del，删除后，再恢复触发器。
+\end{enumerate}
+
+\subsection{解析}
+
+\subsubsection{问题一}
+
+\textbf{题目} \emph{通过创建一个后触发型触发器tr\_sc\_del，限制删除‘计算机系’学生的信息，并给出信息“不能删除计算机系学生选课信息！”（通过多表连接，不要用别名）}
+
+\vspace{6pt}
+
+\qquad 先来介绍一下触发器。
+
+\textbf{1. DML触发器}
+
+\qquad DML触发器分为三类：AFTER触发器、INSTEAD OF触发器和CLR触发器。
+
+\begin{itemize}
+  \item \textbf{AFTER触发器}：在触发事件（INSERT、UPDATE、DELETE）完成后执行，是最常用的触发器类型
+  \item \textbf{INSTEAD OF触发器}：替代触发事件执行，主要用于视图上的数据修改操作
+  \item \textbf{CLR触发器}：使用.NET Framework公共语言运行时创建的触发器，允许使用托管代码编写
+\end{itemize}
+
+\textbf{2. DDL触发器}
+
+\qquad DDL触发器是在数据库结构发生变化时触发的，如创建、修改或删除表、索引、视图等操作。与DML触发器不同，DDL触发器主要用于数据库管理和安全控制。
+
+\begin{itemize}
+  \item \textbf{触发事件}：CREATE、ALTER、DROP等数据定义语言操作
+  \item \textbf{作用范围}：可以在数据库级别或服务器级别设置
+  \item \textbf{主要用途}：防止误操作、记录结构变更日志、实施安全策略
+\end{itemize}
+
+\vspace{6pt}
+
+\qquad 来重点讲一下DML触发器
+
+\textbf{1. INSERTED表和DELETED表}
+
+\qquad 在DML触发器中，系统会自动创建两张临时表：INSERTED表和DELETED表，用于存储触发器执行前后的数据变化。
+
+\begin{itemize}
+  \item \textbf{INSERTED表}：存储新插入或更新后的数据
+  \item \textbf{DELETED表}：存储被删除或更新前的数据
+\end{itemize}
+
+\textbf{不同操作中的表状态：}
+
+\begin{enumerate}
+  \item \textbf{INSERT操作}：
+    \begin{itemize}
+      \item INSERTED表：包含新插入的行数据
+      \item DELETED表：为空
+    \end{itemize}
+
+  \item \textbf{DELETE操作}：
+    \begin{itemize}
+      \item INSERTED表：为空
+      \item DELETED表：包含被删除的行数据
+    \end{itemize}
+
+  \item \textbf{UPDATE操作}：
+    \begin{itemize}
+      \item INSERTED表：包含更新后的新数据
+      \item DELETED表：包含更新前的旧数据
+    \end{itemize}
+\end{enumerate}
+
+\textbf{总结过程：} \textcolor{red}{表中被删除的数据会被转移到DELETED表，
+插入表中的新数据会被转移到INSERTED表。}
+
+\begin{mdframed}[backgroundcolor=gray!10]
+  \textbf{使用示例：}
+\begin{verbatim}
+-- 在触发器中访问这两张表
+SELECT * FROM INSERTED;  -- 查看新数据
+SELECT * FROM DELETED;   -- 查看旧数据
+
+-- 常用于数据验证和日志记录
+IF EXISTS (SELECT * FROM INSERTED WHERE salary < 0)
+BEGIN
+    RAISERROR('工资不能为负数', 16, 1)
+    ROLLBACK TRANSACTION
+END
+\end{verbatim}
+\end{mdframed}
+
+\textbf{2. 创建触发器}
+
+\qquad 分析创建DML触发器的模板：
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+create trigger 触发器名
+on 表名或视图名
+{for | after | instead of} -- 这里是选择触发器的类型
+                           -- 如果仅指定 for 关键字，则after为默认值
+{insert | update | delete} -- 这里是指定哪种数据操作将激活触发器
+[with encryption] -- 如果要求加密触发器需要加上这句
+as
+[if update (列名)] -- 判断指定的列（列名）是否进行了插入或更新操作
+sql_statements -- 其他需要执行的sql语句
+-- 注：单条语句时可省略BEGIN...END，多条语句时需要使用
+\end{verbatim}
+\end{mdframed}
+
+\textbf{3. 触发器执行顺序}
+
+\qquad 当数据库操作发生时，触发器的执行遵循以下顺序：
+
+\begin{enumerate}
+  \item \textbf{执行约束检查}：检查主键、外键、唯一约束等
+  \item \textbf{执行INSTEAD OF触发器}：如果存在，替代原始操作执行
+  \item \textbf{执行数据操作}：如果没有INSTEAD OF触发器，执行原始的INSERT/UPDATE/DELETE操作
+  \item \textbf{执行AFTER触发器}：在数据操作完成后执行
+  \item \textbf{提交或回滚事务}：根据触发器执行结果决定
+\end{enumerate}
+
+\begin{mdframed}[backgroundcolor=yellow!10]
+  \textbf{重要提示：}
+  \begin{itemize}
+    \item 如果触发器中执行了\texttt{ROLLBACK TRANSACTION}，整个事务（包括原始操作）都会被回滚
+    \item 多个触发器存在时，执行顺序可以通过\texttt{sp\_settriggerorder}存储过程来设置
+    \item 触发器中的错误会导致\textcolor{red}{整个事务失败}
+    \item AFTER触发器也叫做\textcolor{red}{后触发型触发器}
+    \item INSTEAD OF触发器也叫做\textcolor{red}{前触发型触发器}
+  \end{itemize}
+\end{mdframed}
+
+\vspace{6pt}
+
+\qquad 现在可以得到这题的答案：
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+create trigger tr_sc_del
+on SC
+after update
+as
+if exists(
+    select 1
+    from delete
+    inner join stu on delete.sno = stu.sno
+    where stu.sdept = '计算机系'
+    -- 查看被删除的信息中有没有计算机系的学生的信息
+)
+begin
+    print '不能删除计算机系学生选课信息！'; -- 打印错误信息
+    rollback transaction; -- 回滚事务
+    return; -- 退出触发器
+end
+\end{verbatim}
+\end{mdframed}
+
+\subsubsection{问题二}
+
+\textbf{题目} \emph{通过创建一个前触发型触发器tr\_stu\_del，限制删除有选课的学生信息。(注意：通过内连接实现，不取别名，临时表在前)}
+
+\vspace{6pt}
+
+\qquad 分析题目可以知道要使用前触发型触发器，在表被修改前进行操作。
+根据上一题的解析可以得到答案：
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+create trigger tr_stu_del
+on stu
+instead of delete
+as
+if exists(
+    select 1
+    from delete
+    inner join sc on delete.sno = sc.sno
+    -- 查找要删除的信息中是否存在有选课记录的学生
+)
+begin
+    print '不能删除有选课记录的学生信息!';
+    return;
+end
+else
+-- INSTEAD型触发器会拦截删除操作，所以需要手动恢复
+begin
+    delete from stu
+    where sno in (select sno from deleted);
+end
+\end{verbatim}
+\end{mdframed}
+
+\vspace{6pt}
+
+\begin{mdframed}[backgroundcolor=yellow!10]
+  \textbf{重要提示：如何判断在哪张表上创建触发器}
+
+  \begin{itemize}
+    \item \textbf{看操作对象}：题目中提到要限制对哪张表的操作，触发器就创建在那张表上
+    \item \textbf{问题一}：限制删除"计算机系学生的选课信息" → 操作的是SC表 → 在SC表上创建触发器
+    \item \textbf{问题二}：限制删除"有选课的学生信息" → 操作的是Student表 → 在Student表上创建触发器
+    \item \textbf{一般规律}：
+      \begin{itemize}
+        \item 如果要控制对表A的INSERT/UPDATE/DELETE操作，就在表A上创建触发器
+        \item 触发器会在对该表进行指定操作时自动执行
+        \item 通过INSERTED/DELETED表可以获取操作前后的数据进行判断
+      \end{itemize}
+  \end{itemize}
+\end{mdframed}
+
+\subsubsection{问题三}
+
+\textbf{题目} \emph{创建一个用于防止用户删除学生选课数据库中任何数据表的触发器tr\_droptable}
+
+\vspace{6pt}
+
+\qquad 根据题目可以发现，触发器触发条件是删除数据表，由此可以判断需要创建DDL触发器。
+
+\qquad 分析DDL触发器的创建模板：
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+create trigger 触发器名
+on {all server | database}
+[with encryption]
+{for | after} {DDL事件} [,...n]
+as
+    sql_statements
+\end{verbatim}
+\end{mdframed}
+
+\qquad 每一个DDL事件都对应一个Transact-SQL语句。例如，DROP\_TABLE事件对应DROP TABLE语句，CREATE\_TABLE事件对应CREATE TABLE语句，ALTER\_TABLE事件对应ALTER TABLE语句等。
+
+\qquad 根据题目要求，我们需要防止删除数据表，所以使用DROP\_TABLE事件。答案如下：
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+create trigger tr_droptable
+on database
+for drop_table
+as
+begin
+    print '禁止删除数据库中的表！';
+    rollback transaction;
+end
+\end{verbatim}
+\end{mdframed}
+
+\subsubsection{问题四}
+
+\textbf{题目} \emph{为了必须删除一个选课记录（学号95001， 课程号001），请先抑制触发器tr\_sc\_del，删除后，再恢复触发器。}
+
+\vspace{6pt}
+
+\qquad 分析题目可知，要删除一个值需要先禁用触发器，删除后再启用这个触发器，
+考察触发器的禁用和启用。
+
+\vspace{6pt}
+
+\textbf{1. 禁用触发器}
+
+\qquad 禁用触发器的模板：
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+disable trigger {all | 触发器名 [,...n]} -- 哪个触发器
+on {object_name | database | all server} -- 在哪个位置的触发器
+\end{verbatim}
+\end{mdframed}
+
+\textbf{2. 启用触发器}
+
+\qquad 启用触发器的模板：
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+enable trigger {all | 触发器名 [,...n]} -- 哪个触发器
+on {object_name | database | all server} -- 在哪个位置的触发器
+\end{verbatim}
+\end{mdframed}
+
+\qquad 根据题目要求，完整的操作步骤如下：
+
+\begin{mdframed}[backgroundcolor=blue!5]
+\begin{verbatim}
+-- 第一步：禁用触发器
+disable trigger tr_sc_del on sc;
+
+-- 第二步：删除指定的选课记录
+delete from sc
+where sno = '95001' and cno = '001';
+
+-- 第三步：启用触发器
+enable trigger tr_sc_del on sc;
+\end{verbatim}
+\end{mdframed}
+
+\subsection{知识点拓展}
+
+\subsubsection{查看触发器}
+
+\qquad 可以通过以下几种方式查看触发器：
+
+\begin{enumerate}
+  \item \textbf{查看数据库中的所有触发器}：
+    \begin{verbatim}
+    SELECT * FROM sys.triggers;
+    \end{verbatim}
+
+  \item \textbf{查看特定表上的触发器}：
+    \begin{verbatim}
+    SELECT * FROM sys.triggers
+    WHERE parent_id = OBJECT_ID('表名');
+    \end{verbatim}
+
+  \item \textbf{查看触发器的详细信息}：
+    \begin{verbatim}
+    EXEC sp_helptext '触发器名';
+    \end{verbatim}
+\end{enumerate}
+
+\subsubsection{删除触发器}
+
+\qquad 删除触发器的语法很简单：
+
+\begin{mdframed}[backgroundcolor=gray!10]
+\begin{verbatim}
+DROP TRIGGER 触发器名;
+\end{verbatim}
+\end{mdframed}
+
+\qquad 示例：
+\begin{verbatim}
+-- 删除DML触发器
+DROP TRIGGER tr_sc_del;
+
+-- 删除DDL触发器
+DROP TRIGGER tr_droptable ON DATABASE;
+\end{verbatim}
+
+\textbf{注意：}删除触发器后，该触发器的所有功能将永久失效，请谨慎操作。
