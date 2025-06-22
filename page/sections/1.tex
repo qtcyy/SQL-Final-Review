@@ -83,3 +83,51 @@
   \item \texttt{add file} 添加数据库文件
   \item \texttt{add log file} 添加日志文件
 \end{itemize}
+
+\subsection{知识点拓展}
+
+\subsubsection{数据库日志的作用}
+
+\qquad 数据库日志文件（Transaction Log）是数据库系统中至关重要的组成部分，主要作用包括：
+
+\begin{enumerate}
+  \item \textbf{事务恢复}：记录所有对数据库的修改操作，在系统崩溃时可以通过日志进行数据恢复。
+  \item \textbf{数据一致性}：确保事务的ACID特性，特别是原子性和一致性。
+  \item \textbf{回滚操作}：当事务需要回滚时，可以根据日志中的记录撤销已执行的操作。
+  \item \textbf{备份支持}：支持增量备份和时点恢复功能。
+  \item \textbf{数据库镜像}：为数据库镜像和复制提供数据同步基础。
+\end{enumerate}
+
+\qquad 日志文件通常包含以下信息：
+\begin{itemize}
+  \item 事务的开始和结束
+  \item 数据修改前后的值
+  \item 检查点信息
+  \item 页面分配信息
+\end{itemize}
+
+\subsubsection{增长速度的设置}
+
+\qquad 数据库文件的增长速度设置对数据库性能和存储管理有重要影响：
+
+\textbf{1. 固定大小增长（如10MB）}
+\begin{itemize}
+  \item \textbf{优点}：增长大小可预测，便于存储空间规划
+  \item \textbf{缺点}：当数据量较大时，频繁的小幅增长可能影响性能
+  \item \textbf{适用场景}：数据增长相对稳定的小型数据库
+\end{itemize}
+
+\textbf{2. 百分比增长（如15\%）}
+\begin{itemize}
+  \item \textbf{优点}：随着文件大小增大，增长量也相应增大，减少增长频率
+  \item \textbf{缺点}：增长大小不可预测，可能导致存储空间不足
+  \item \textbf{适用场景}：数据增长较快的大型数据库
+\end{itemize}
+
+\textbf{3. 最佳实践建议}
+\begin{itemize}
+  \item 数据文件：建议使用固定大小增长，避免频繁的自动增长
+  \item 日志文件：可以使用百分比增长，但要设置合理的最大大小限制
+  \item 预分配空间：根据预期的数据增长提前分配足够的空间
+  \item 监控增长：定期监控文件增长情况，及时调整策略
+\end{itemize}
