@@ -190,6 +190,7 @@ WITH REPLACE, RECOVERY
 \textbf{2. 恢复完整备份+差异备份}
 
 \qquad \textbf{说明：}先恢复完整备份，再应用差异备份。可以恢复到差异备份时的状态，减少了部分数据丢失。注意必须使用NORECOVERY选项，直到最后一步才使用RECOVERY。
+这在多步骤恢复备份过程中都适用。
 
 \qquad \textbf{模板：}
 \begin{mdframed}[backgroundcolor=gray!10]
@@ -203,6 +204,16 @@ RESTORE DATABASE [数据库名称]
 FROM [差异备份设备或路径]
 WITH RECOVERY
 \end{verbatim}
+\end{mdframed}
+
+\begin{mdframed}[backgroundcolor=yellow!20]
+  \textbf{NORECOVERY与RECOVERY选项的重要性：}
+  \begin{itemize}
+    \item \textbf{NORECOVERY}：告诉SQL Server这不是恢复过程的最后一步，数据库保持在"正在恢复"状态，允许应用后续的备份文件。此时数据库无法访问。
+    \item \textbf{RECOVERY}：告诉SQL Server这是恢复过程的最后一步，完成恢复过程并使数据库重新联机，用户可以正常访问。
+    \item \textbf{为什么这样设计}：如果在中间步骤使用RECOVERY，数据库会立即联机，导致无法继续应用后续的备份文件，恢复过程被中断。
+    \item \textbf{事务日志链}：多步骤恢复需要保持事务日志的连续性，NORECOVERY确保日志序列号（LSN）的连续性不被破坏。
+  \end{itemize}
 \end{mdframed}
 
 \qquad \textbf{示例：}
